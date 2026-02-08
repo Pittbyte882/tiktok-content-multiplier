@@ -3,11 +3,15 @@
 import { useState } from 'react';
 import { Upload, Zap, TrendingUp, Sparkles, Play, X } from 'lucide-react';
 import AIThinkingLoader from '@/components/AIThinkingLoader';
+import { useRouter } from 'next/navigation';
+
+
+  
 
 export default function Home() {
   const [showDemo, setShowDemo] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
-
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black">
       <div className="container mx-auto px-4 py-20">
@@ -41,7 +45,7 @@ export default function Home() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
             <button
-              onClick={() => setShowDemo(true)}
+              onClick={() => router.push('/upload')}
               className="group px-8 py-4 rounded-full bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink text-white font-semibold text-lg hover:scale-105 transition-transform"
             >
               <span className="flex items-center gap-2">
