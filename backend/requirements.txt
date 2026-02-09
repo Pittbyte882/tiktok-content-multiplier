@@ -11,7 +11,7 @@ openai==1.54.0
 
 # Database
 supabase==2.9.1
-psycopg2-binary==2.9.9
+#psycopg2-binary==2.9.9  if needed later pip install psycopg2-binary --only-binary psycopg2-binary
 
 # Background Jobs
 celery==5.4.0
@@ -20,6 +20,7 @@ redis==5.2.0
 # File Processing
 ffmpeg-python==0.2.0
 python-magic==0.4.27
+aiofiles==24.1.0
 
 # Storage
 boto3==1.35.0
@@ -27,12 +28,14 @@ boto3==1.35.0
 # Authentication & Payments
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+
+#Payments
 stripe==11.1.0
 
 # Utilities
 python-dotenv==1.0.1
 httpx==0.27.2
-aiofiles==24.1.0
+
 
 # Testing
 pytest==8.3.3
