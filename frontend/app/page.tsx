@@ -23,10 +23,14 @@ export default function Home() {
               Content Slicer
             </span>
           </div>
-          <button className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10">
+          <button 
+            onClick={() => router.push('/login')}
+            className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+          >
             Sign In
           </button>
-        </nav>
+                 
+           </nav>
 
         {/* Hero Content */}
         <div className="max-w-5xl mx-auto text-center mb-20">
