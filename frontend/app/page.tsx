@@ -20,7 +20,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-8 h-8 text-tiktok-cyan" />
             <span className="text-2xl font-bold bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink bg-clip-text text-transparent">
-              Content Slicer
+              Stack Slice AI
             </span>
           </div>
           <button 
