@@ -4,12 +4,12 @@ import { useState, useCallback } from 'react';
 import { Upload as UploadIcon, X, CheckCircle, AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AIThinkingLoader from '@/components/AIThinkingLoader';
+import { api } from '@/lib/api';
 
 interface UploadedFile {
   file: File;
   preview: string;
   size: string;
-  duration?: number;
 }
 
 export default function UploadPage() {
@@ -20,7 +20,6 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // Handle drag events
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -31,7 +30,6 @@ export default function UploadPage() {
     setIsDragging(false);
   }, []);
 
-  // Format file size
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -40,7 +38,6 @@ export default function UploadPage() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  // Validate file
   const validateFile = (file: File): string | null => {
     const validTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
     const maxSize = 500 * 1024 * 1024; // 500MB
@@ -56,7 +53,6 @@ export default function UploadPage() {
     return null;
   };
 
-  // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -71,7 +67,6 @@ export default function UploadPage() {
       return;
     }
 
-    // Create preview URL
     const preview = URL.createObjectURL(file);
     
     setUploadedFile({
@@ -81,7 +76,6 @@ export default function UploadPage() {
     });
   }, []);
 
-  // Handle file input change
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const file = e.target.files?.[0];
@@ -102,7 +96,6 @@ export default function UploadPage() {
     });
   };
 
-  // Remove uploaded file
   const handleRemoveFile = () => {
     if (uploadedFile?.preview) {
       URL.revokeObjectURL(uploadedFile.preview);
@@ -112,49 +105,29 @@ export default function UploadPage() {
     setUploadProgress(0);
   };
 
-  // Process video
   const handleProcess = async () => {
     if (!uploadedFile) return;
 
     setIsProcessing(true);
     setError(null);
+    setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('video', uploadedFile.file);
-
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 300);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
-        method: 'POST',
-        body: formData,
+      // Upload video with progress tracking
+      const response = await api.uploadVideo(uploadedFile.file, (progress) => {
+        setUploadProgress(progress);
       });
 
-      clearInterval(progressInterval);
-      setUploadProgress(100);
+      console.log('Upload response:', response);
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const data = await response.json();
-      
       // Redirect to results page with job ID
       setTimeout(() => {
-        router.push(`/results/${data.job_id}`);
-      }, 1000);
+        router.push(`/results/${response.job_id}`);
+      }, 500);
 
     } catch (err) {
-      setError('Failed to upload video. Please try again.');
+      console.error('Upload error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload video. Please try again.');
       setIsProcessing(false);
       setUploadProgress(0);
     }
@@ -164,7 +137,6 @@ export default function UploadPage() {
     <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black">
       <div className="container mx-auto px-4 py-8">
         
-        {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <button
             onClick={() => router.push('/')}
@@ -181,13 +153,11 @@ export default function UploadPage() {
             </span>
           </div>
 
-          <div className="w-24" /> {/* Spacer for centering */}
+          <div className="w-24" />
         </div>
 
-        {/* Main Content */}
         <div className="max-w-3xl mx-auto">
           
-          {/* Title */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-tiktok-cyan to-tiktok-pink bg-clip-text text-transparent">
               Upload Your Video
@@ -197,7 +167,6 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* Upload Area */}
           {!uploadedFile && !isProcessing && (
             <div
               onDragOver={handleDragOver}
@@ -219,7 +188,6 @@ export default function UploadPage() {
               />
 
               <div className="text-center">
-                {/* Icon */}
                 <div className="mb-6 flex justify-center">
                   <div className={`
                     p-6 rounded-full transition-all
@@ -232,7 +200,6 @@ export default function UploadPage() {
                   </div>
                 </div>
 
-                {/* Text */}
                 <h3 className="text-2xl font-bold mb-2 text-white">
                   {isDragging ? 'Drop your video here' : 'Drag & drop your video'}
                 </h3>
@@ -240,7 +207,6 @@ export default function UploadPage() {
                   or click to browse files
                 </p>
 
-                {/* Specs */}
                 <div className="flex items-center justify-center gap-6 text-sm text-white/40">
                   <span>Max 500MB</span>
                   <span>•</span>
@@ -252,11 +218,9 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* File Preview */}
           {uploadedFile && !isProcessing && (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
               <div className="flex items-start gap-6">
-                {/* Video Thumbnail */}
                 <div className="flex-shrink-0">
                   <video
                     src={uploadedFile.preview}
@@ -264,7 +228,6 @@ export default function UploadPage() {
                   />
                 </div>
 
-                {/* File Info */}
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -283,13 +246,11 @@ export default function UploadPage() {
                     </button>
                   </div>
 
-                  {/* Success Message */}
                   <div className="flex items-center gap-2 text-green-400 mb-6">
                     <CheckCircle className="w-5 h-5" />
                     <span className="text-sm">Video ready to process</span>
                   </div>
 
-                  {/* Process Button */}
                   <button
                     onClick={handleProcess}
                     className="w-full py-4 rounded-full bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink text-white font-semibold text-lg hover:scale-105 transition-transform"
@@ -305,15 +266,13 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Processing State */}
           {isProcessing && (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-12">
               <AIThinkingLoader 
                 size="lg" 
-                message={uploadProgress < 100 ? "Uploading your video" : "Processing started"} 
+                message={uploadProgress < 100 ? "Uploading your video" : "Starting AI processing"} 
               />
 
-              {/* Upload Progress */}
               <div className="mt-8">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white/60 text-sm">Upload Progress</span>
@@ -333,7 +292,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Error Message */}
           {error && (
             <div className="mt-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
               <div className="flex items-center gap-3 text-red-400">
@@ -343,7 +301,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Info Cards */}
           {!uploadedFile && !isProcessing && (
             <div className="grid md:grid-cols-3 gap-4 mt-12">
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10">

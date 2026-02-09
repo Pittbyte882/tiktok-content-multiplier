@@ -20,7 +20,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-8 h-8 text-tiktok-cyan" />
             <span className="text-2xl font-bold bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink bg-clip-text text-transparent">
-              TikTok Multiplier
+              Content Slicer
             </span>
           </div>
           <button className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10">
