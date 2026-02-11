@@ -4,14 +4,13 @@ import { useState } from 'react';
 import { Upload, Zap, TrendingUp, Sparkles, Play, X } from 'lucide-react';
 import AIThinkingLoader from '@/components/AIThinkingLoader';
 import { useRouter } from 'next/navigation';
-
-
-  
+import PricingCard from '@/components/PricingCard';
 
 export default function Home() {
   const [showDemo, setShowDemo] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const router = useRouter();
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black">
       <div className="container mx-auto px-4 py-20">
@@ -29,8 +28,7 @@ export default function Home() {
           >
             Sign In
           </button>
-                 
-           </nav>
+        </nav>
 
         {/* Hero Content */}
         <div className="max-w-5xl mx-auto text-center mb-20">
@@ -129,16 +127,6 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-
-              {/* replace the above div with an actual video when ready:
-              <video 
-                className="w-full rounded-2xl"
-                controls
-                autoPlay
-              >
-                <source src="/demo-video.mp4" type="video/mp4" />
-              </video>
-              */}
             </div>
           </div>
         )}
@@ -185,56 +173,46 @@ export default function Home() {
               Simple Pricing
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
+              
               {/* Free */}
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors">
-                <h3 className="text-lg font-semibold mb-2">Free</h3>
-                <div className="text-3xl font-bold mb-4">$0</div>
-                <ul className="space-y-2 text-white/60 text-sm mb-6">
-                  <li>✓ 3 videos per month</li>
-                  <li>✓ 10 credits</li>
-                  <li>✓ Basic features</li>
-                </ul>
-                <button className="w-full py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-                  Get Started
-                </button>
-              </div>
+              <PricingCard
+                name="Free"
+                price={0}
+                priceId=""
+                features={[
+                  '3 videos per month',
+                  '10 credits',
+                  'Basic features'
+                ]}
+              />
 
               {/* Creator */}
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-tiktok-cyan/10 to-tiktok-purple/10 border-2 border-tiktok-cyan/50 relative hover:border-tiktok-cyan transition-colors">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-tiktok-cyan text-black text-xs font-bold">
-                  MOST POPULAR
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Creator</h3>
-                <div className="text-3xl font-bold mb-4">
-                  $49<span className="text-lg text-white/60">/mo</span>
-                </div>
-                <ul className="space-y-2 text-white/80 text-sm mb-6">
-                  <li>✓ 50 videos per month</li>
-                  <li>✓ 1,000 credits</li>
-                  <li>✓ All features</li>
-                  <li>✓ Priority support</li>
-                </ul>
-                <button className="w-full py-2 rounded-full bg-gradient-to-r from-tiktok-cyan to-tiktok-purple hover:scale-105 transition-transform font-semibold">
-                  Start Free Trial
-                </button>
-              </div>
+              <PricingCard
+                name="Creator"
+                price={49}
+                priceId={process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_CREATOR || ''}
+                features={[
+                  '50 videos per month',
+                  '1,000 credits',
+                  'All features',
+                  'Priority support'
+                ]}
+                popular
+              />
 
               {/* Agency */}
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-colors">
-                <h3 className="text-lg font-semibold mb-2">Agency</h3>
-                <div className="text-3xl font-bold mb-4">
-                  $149<span className="text-lg text-white/60">/mo</span>
-                </div>
-                <ul className="space-y-2 text-white/60 text-sm mb-6">
-                  <li>✓ Unlimited videos</li>
-                  <li>✓ 5,000 credits</li>
-                  <li>✓ White-label</li>
-                  <li>✓ Team accounts</li>
-                </ul>
-                <button className="w-full py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-                  Contact Sales
-                </button>
-              </div>
+              <PricingCard
+                name="Agency"
+                price={149}
+                priceId={process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_AGENCY || ''}
+                features={[
+                  'Unlimited videos',
+                  '5,000 credits',
+                  'White-label',
+                  'Team accounts'
+                ]}
+              />
+              
             </div>
           </div>
         )}
@@ -243,7 +221,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-white/10 mt-32">
         <div className="container mx-auto px-4 py-8 text-center text-white/40 text-sm">
-          <p>© 2026 TikTok Content Multiplier. Built by Crystal Pittman.</p>
+          <p>© 2026 Stack Slice AI. Built by Crystal Pittman.</p>
         </div>
       </footer>
     </div>

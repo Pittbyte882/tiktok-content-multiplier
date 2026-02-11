@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import db
-from app.routes import upload, jobs, auth
+from app.routes import upload, jobs, auth, payments
 import logging
 
 logging.basicConfig(
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="AI-powered TikTok content multiplier - turn 1 video into 20+ pieces of content",
+    description="AI-powered TikTok content multiplier",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -46,8 +46,7 @@ async def root():
     return {
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "status": "healthy",
-        "message": "TikTok Content Multiplier API is running"
+        "status": "healthy"
     }
 
 
@@ -56,7 +55,6 @@ async def health_check():
     try:
         client = db.get_client()
         client.table("users").select("count", count="exact").limit(0).execute()
-        
         return {
             "status": "healthy",
             "database": "connected",
@@ -71,13 +69,9 @@ async def health_check():
 app.include_router(auth.router, tags=["authentication"])
 app.include_router(upload.router, tags=["upload"])
 app.include_router(jobs.router, tags=["jobs"])
+app.include_router(payments.router, tags=["payments"])
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG
-    )
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
