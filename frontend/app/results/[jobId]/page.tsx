@@ -6,6 +6,31 @@ import { ArrowLeft, Download, Copy, Check, Sparkles, AlertCircle } from 'lucide-
 import AIThinkingLoader from '@/components/AIThinkingLoader';
 import { api, JobStatusResponse } from '@/lib/api';
 
+// Define types for the results structure
+interface ViralHook {
+  text: string;
+  virality_score: number;
+}
+
+interface Caption {
+  caption: string;
+  hashtags: string[];
+  character_count: number;
+}
+
+interface Clip {
+  start_time: number;
+  end_time: number;
+  description: string;
+}
+
+interface ProcessingResults {
+  transcript: string;
+  viral_hooks: string[];
+  captions: Caption[];
+  clips: Clip[];
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const router = useRouter();
@@ -118,6 +143,13 @@ export default function ResultsPage() {
   }
 
   const { results } = jobStatus;
+  if (!results) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black flex items-center justify-center p-4">
+        <AIThinkingLoader size="lg" message="Loading results..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black">
@@ -170,7 +202,7 @@ export default function ResultsPage() {
               Viral Hooks ({results.viral_hooks?.length || 0})
             </h2>
             <div className="grid md:grid-cols-2 gap-4">
-              {results.viral_hooks?.map((hook, index) => (
+              {results.viral_hooks?.map((hook: string, index: number) => (
                 <div key={index} className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-cyan/30 transition-colors group">
                   <div className="flex items-start justify-between mb-3">
                     <span className="text-sm text-white/40">Hook #{index + 1}</span>
@@ -188,7 +220,7 @@ export default function ResultsPage() {
                   <p className="text-white font-medium text-lg">{hook}</p>
                   <div className="mt-3 flex items-center gap-2">
                     <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
+                      {[...Array(5)].map((_, i: number) => (
                         <span key={i} className="text-yellow-400">⭐</span>
                       ))}
                     </div>
@@ -206,7 +238,7 @@ export default function ResultsPage() {
               Smart Captions ({results.captions?.length || 0})
             </h2>
             <div className="space-y-4">
-              {results.captions?.map((caption, index) => (
+              {results.captions?.map((caption: Caption, index: number) => (
                 <div key={index} className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-purple/30 transition-colors">
                   <div className="flex items-start justify-between mb-4">
                     <span className="text-sm text-white/40">Caption #{index + 1}</span>
@@ -223,7 +255,7 @@ export default function ResultsPage() {
                   </div>
                   <p className="text-white mb-4 whitespace-pre-wrap">{caption.caption}</p>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {caption.hashtags?.map((tag, tagIndex) => (
+                    {caption.hashtags?.map((tag: string, tagIndex: number) => (
                       <span key={tagIndex} className="px-3 py-1 rounded-full bg-tiktok-cyan/10 text-tiktok-cyan text-sm">
                         {tag}
                       </span>
@@ -271,7 +303,7 @@ export default function ResultsPage() {
                 Viral Moment Clips ({results.clips.length})
               </h2>
               <div className="grid md:grid-cols-2 gap-4">
-                {results.clips.map((clip, index) => (
+                {results.clips.map((clip: Clip, index: number) => (
                   <div key={index} className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors">
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-sm text-white/40">Clip #{index + 1}</span>
