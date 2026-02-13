@@ -12,20 +12,6 @@
     @apply bg-black text-white antialiased;
   }
 }
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-  }
-  
-  body {
-    @apply bg-black text-white antialiased;
-  }
-}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
