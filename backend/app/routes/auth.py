@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, validator
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
@@ -12,6 +12,21 @@ router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# Helper functions for password hashing
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt"""
+    # Ensure password is within bcrypt's 72-byte limit
+    if len(password.encode('utf-8')) > 72:
+        raise ValueError("Password is too long")
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+# Pydantic models
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -19,23 +34,21 @@ class UserLogin(BaseModel):
 
 class UserSignup(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=8, max_length=72)
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) > 72:
+            raise ValueError('Password must be 72 characters or less')
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        return v
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
     user: dict
-
-
-def hash_password(password: str) -> str:
-    """Hash a password"""
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict) -> str:
@@ -66,15 +79,14 @@ async def signup(user_data: UserSignup):
             detail="Email already registered"
         )
     
-    # Validate password length
-    if len(user_data.password) < 8:
+    # Hash password (validation already done by Pydantic)
+    try:
+        hashed_password = hash_password(user_data.password)
+    except ValueError as e:
         raise HTTPException(
             status_code=400,
-            detail="Password must be at least 8 characters"
+            detail=str(e)
         )
-    
-    # Hash password
-    hashed_password = hash_password(user_data.password)
     
     # Create user
     user = await create_user(user_data.email, hashed_password)
