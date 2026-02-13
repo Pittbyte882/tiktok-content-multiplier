@@ -43,10 +43,23 @@ class ApiClient {
     this.baseUrl = API_URL;
   }
 
+  // Get auth token from localStorage
+  private getToken(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  }
+
   // Upload video
   async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
+
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('Not authenticated. Please log in.');
+    }
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -85,13 +98,25 @@ class ApiClient {
 
       // Send request
       xhr.open('POST', `${this.baseUrl}/upload`);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`); // ✅ ADD THIS LINE!
       xhr.send(formData);
     });
   }
 
   // Get job status
   async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-    const response = await fetch(`${this.baseUrl}/jobs/${jobId}`);
+    const token = this.getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/jobs/${jobId}`, {
+      headers,
+    });
     
     if (!response.ok) {
       const error: ApiError = await response.json();

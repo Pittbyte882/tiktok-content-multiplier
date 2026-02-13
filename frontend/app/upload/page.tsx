@@ -165,7 +165,7 @@ export default function UploadPage() {
                 Upload Your Video
               </h1>
               <p className="text-white/60 text-lg">
-                Upload your TikTok and let AI create 20+ pieces of viral content
+                Upload your video and let AI create 20+ pieces of viral content
               </p>
             </div>
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from app.database import (
     get_user_by_id, 
     create_video_record, 
@@ -8,6 +8,7 @@ from app.database import (
 )
 from app.models import VideoUploadResponse
 from app.config import settings
+from jose import jwt, JWTError
 import aiofiles
 import os
 from datetime import datetime
@@ -16,19 +17,58 @@ import uuid
 router = APIRouter()
 
 
-async def get_current_user():
+async def get_current_user(authorization: str = Header(None)):
     """
-    Get current user from token (placeholder for now)
-    In production, decode JWT token from Authorization header
+    Get current user from JWT token
     """
-    # TODO: Add real JWT token verification
-    # For now, return a mock user for testing
-    return {
-        "id": "test-user-123",
-        "email": "test@example.com",
-        "subscription_tier": "free",
-        "credits_remaining": 100
-    }
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+    
+    # Extract token from "Bearer <token>"
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != 'bearer':
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication scheme"
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header"
+        )
+    
+    # Decode JWT token
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM]
+        )
+        user_id: str = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token"
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials"
+        )
+    
+    # Get user from database
+    user = await get_user_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+    
+    return user
 
 
 def get_video_duration(file_path: str) -> float:
@@ -113,7 +153,7 @@ async def upload_video(
     
     # Create video record in database
     video_record = await create_video_record(
-        user_id=current_user["id"],
+        user_id=current_user["id"],  # Now this is a real UUID from database
         filename=file.filename,
         file_size_mb=file_size_mb,
         duration_seconds=duration_seconds,
