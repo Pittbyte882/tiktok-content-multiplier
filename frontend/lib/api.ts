@@ -1,6 +1,6 @@
 // API client for backend communication
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stacksliceai.onrender.com';
 
 export interface UploadResponse {
   video_id: string;
