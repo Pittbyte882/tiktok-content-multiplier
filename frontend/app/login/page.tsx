@@ -39,7 +39,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center gap-2 mb-4">
             <Sparkles className="w-8 h-8 text-tiktok-cyan" />
             <span className="text-2xl font-bold bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink bg-clip-text text-transparent">
-              ViralStack
+              Stack Slice AI
             </span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
