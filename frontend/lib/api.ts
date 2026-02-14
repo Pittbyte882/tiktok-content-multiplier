@@ -43,10 +43,19 @@ class ApiClient {
     this.baseUrl = API_URL;
   }
 
-  // Get auth token from localStorage
+  // Get auth token from Zustand's persisted storage
   private getToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
+      try {
+        // Zustand persist stores data in localStorage with the key 'auth-storage'
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          return parsed?.state?.token || null;
+        }
+      } catch (error) {
+        console.error('Error reading auth token:', error);
+      }
     }
     return null;
   }
@@ -98,7 +107,10 @@ class ApiClient {
 
       // Send request
       xhr.open('POST', `${this.baseUrl}/upload`);
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`); // ✅ ADD THIS LINE!
+      
+      // ✅ CRITICAL: Send the token in Authorization header
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
       xhr.send(formData);
     });
   }
