@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header, BackgroundTasks
 from app.database import (
     get_user_by_id, 
     create_video_record, 
@@ -85,6 +85,7 @@ def get_video_duration(file_path: str) -> float:
 
 @router.post("/upload", response_model=VideoUploadResponse)
 async def upload_video(
+    background_tasks: BackgroundTasks,  # ✅ ADD THIS
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
@@ -95,6 +96,7 @@ async def upload_video(
     - Calculates credits needed
     - Saves file to storage
     - Creates job for background processing
+    - Triggers async processing
     """
     
     # Validate file type
@@ -179,9 +181,9 @@ async def upload_video(
         subscription_tier=current_user["subscription_tier"]
     )
     
-    # TODO: Trigger Celery task for background processing
-    # from app.tasks import process_video
-    # process_video.delay(job_record["id"], temp_file_path)
+    # ✅ TRIGGER BACKGROUND PROCESSING - THIS IS THE FIX!
+    from app.tasks import process_video_job
+    background_tasks.add_task(process_video_job, job_record["id"], temp_file_path)
     
     return VideoUploadResponse(
         video_id=video_record["id"],
