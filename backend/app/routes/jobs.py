@@ -1,16 +1,65 @@
-from fastapi import APIRouter, HTTPException, Depends
-from app.database import get_job_by_id
+from fastapi import APIRouter, HTTPException, Depends, Header
+from app.database import get_job_by_id, get_user_by_id
 from app.models import JobStatusResponse, JobStatus
+from app.config import settings
+from jose import jwt, JWTError
 
 router = APIRouter()
 
 
-async def get_current_user():
-    """Get current user (placeholder)"""
-    return {
-        "id": "test-user-123",
-        "email": "test@example.com"
-    }
+async def get_current_user(authorization: str = Header(None)):
+    """
+    Get current user from JWT token
+    Same authentication logic as upload.py
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated"
+        )
+    
+    # Extract token from "Bearer <token>"
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != 'bearer':
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication scheme"
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authorization header"
+        )
+    
+    # Decode JWT token
+    try:
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=[settings.ALGORITHM]
+        )
+        user_id: str = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token"
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials"
+        )
+    
+    # Get user from database
+    user = await get_user_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+    
+    return user
 
 
 @router.get("/jobs/{job_id}", response_model=JobStatusResponse)
@@ -24,6 +73,7 @@ async def get_job_status(
     - Returns current status (pending, processing, completed, failed)
     - Includes progress percentage
     - Returns results when completed
+    - Requires authentication
     """
     
     # Get job from database
