@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from app.agents.transcriber import TranscriberAgent
 from app.agents.hook_generator import HookGeneratorAgent
-from app.agents.caption_generator import CaptionGeneratorAgent
+from app.agents.caption_writer import CaptionWriterAgent
 from app.agents.clipper import ClipperAgent
 from app.database import update_job_status, update_job_results
 
