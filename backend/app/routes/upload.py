@@ -153,7 +153,7 @@ async def upload_video(
     
     # Create video record in database
     video_record = await create_video_record(
-        user_id=current_user["id"],  # Now this is a real UUID from database
+        user_id=current_user["id"],
         filename=file.filename,
         file_size_mb=file_size_mb,
         duration_seconds=duration_seconds,
