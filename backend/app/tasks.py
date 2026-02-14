@@ -52,8 +52,8 @@ async def process_video_job(job_id: str, video_path: str):
         
         # Step 3: Generate captions
         await update_job_status(job_id, "processing", "Creating captions...")
-        caption_generator = CaptionGeneratorAgent()
-        captions = await caption_generator.generate_captions(transcript, hooks)
+        caption_writer = CaptionWriterAgent()
+        captions = await caption_writer.generate_captions(transcript, hooks)
         
         logger.info(f"Generated {len(captions)} caption variations")
         

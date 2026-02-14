@@ -181,10 +181,12 @@ async def upload_video(
         subscription_tier=current_user["subscription_tier"]
     )
     
-    # ✅ TRIGGER BACKGROUND PROCESSING - THIS IS THE FIX!
+    # ✅ TRIGGER BACKGROUND PROCESSING
     from app.tasks import process_video_job
-    background_tasks.add_task(process_video_job, job_record["id"], temp_file_path)
-    
+    # Run async task in background
+    import asyncio
+    asyncio.create_task(process_video_job(job_record["id"], temp_file_path))
+        
     return VideoUploadResponse(
         video_id=video_record["id"],
         job_id=job_record["id"],
