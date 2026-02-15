@@ -195,3 +195,9 @@ Need help? Contact support@stacksliceai.com
 # @celery_app.task
 # def process_video_celery(job_id: str, video_path: str):
 #     asyncio.run(process_video_job(job_id, video_path))
+
+# Sync wrapper for BackgroundTasks
+def process_video_job_sync(job_id: str, video_path: str):
+    """Synchronous wrapper for FastAPI BackgroundTasks"""
+    import asyncio
+    asyncio.run(process_video_job(job_id, video_path))
