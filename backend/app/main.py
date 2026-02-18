@@ -28,9 +28,11 @@ app.add_middleware(
         "https://stacksliceai.vercel.app",   # Vercel preview
         "http://localhost:3000",             # Local dev
     ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
     
 )
 
