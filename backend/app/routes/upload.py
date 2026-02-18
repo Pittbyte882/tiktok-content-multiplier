@@ -13,6 +13,9 @@ import aiofiles
 import os
 from datetime import datetime
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -79,7 +82,7 @@ def get_video_duration(file_path: str) -> float:
         duration = float(probe['format']['duration'])
         return duration
     except Exception as e:
-        print(f"Error getting duration: {e}")
+        logger.error(f"Error getting duration: {e}")
         return 0.0
 
 
