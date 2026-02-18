@@ -107,16 +107,10 @@ async def process_video_job(job_id: str, video_path: str):
 async def package_results(job_id: str, results: dict) -> str:
     """
     Package all results into a downloadable ZIP file
-    
-    Contents:
-    - transcript.txt
-    - viral_hooks.txt
-    - captions/caption_01.txt ... caption_10.txt
-    - clips/clip_01.mp4 ... clip_20.mp4
-    
-    Returns:
-        Path to ZIP file
+    AND upload clips to Supabase Storage for preview
     """
+    from app.database import db
+    import shutil
     
     output_dir = Path("/tmp/outputs") / job_id
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -139,16 +133,48 @@ async def package_results(job_id: str, results: dict) -> str:
         caption_text = f"{caption_data['caption']}\n\n{' '.join(caption_data['hashtags'])}"
         caption_file.write_text(caption_text)
     
-    # Copy clips to directory
+    # ✅ UPLOAD CLIPS TO SUPABASE STORAGE
     clips_dir = output_dir / "clips"
     clips_dir.mkdir(exist_ok=True)
     
-    for clip in results['clips']:
+    uploaded_clip_urls = []
+    
+    for i, clip in enumerate(results['clips'], 1):
         clip_source = Path(clip['clip_path'])
         if clip_source.exists():
+            # Copy to output directory
             clip_dest = clips_dir / clip_source.name
-            import shutil
             shutil.copy2(clip_source, clip_dest)
+            
+            # ✅ UPLOAD TO SUPABASE STORAGE
+            try:
+                with open(clip_source, 'rb') as f:
+                    clip_data = f.read()
+                
+                # Upload to Supabase Storage
+                storage_path = f"clips/{job_id}/{clip_source.name}"
+                
+                result = db.get_client().storage.from_('videos').upload(
+                    storage_path,
+                    clip_data,
+                    file_options={"content-type": "video/mp4"}
+                )
+                
+                # Get public URL
+                public_url = db.get_client().storage.from_('videos').get_public_url(storage_path)
+                
+                uploaded_clip_urls.append({
+                    "clip_number": i,
+                    "url": public_url,
+                    "start_time": clip['start_time'],
+                    "end_time": clip['end_time'],
+                    "description": clip['description']
+                })
+                
+                logger.info(f"Uploaded clip {i} to Supabase: {public_url}")
+                
+            except Exception as e:
+                logger.error(f"Failed to upload clip {i} to Supabase: {e}")
     
     # Create README
     readme_path = output_dir / "README.txt"
@@ -182,8 +208,8 @@ Need help? Contact support@stacksliceai.com
     
     logger.info(f"Results packaged: {zip_path}")
     
-    # TODO: Upload ZIP to cloud storage (S3, Supabase Storage, etc.)
-    # For now, return local path
+    # Store clip URLs in database for frontend access
+    results['clip_urls'] = uploaded_clip_urls
     
     return str(zip_path)
 

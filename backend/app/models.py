@@ -118,6 +118,7 @@ class GenerationResult(BaseModel):
     viral_hooks: List[str]  # 5-10 hook variations
     captions: List[dict]    # Caption + hashtag combos
     clips: List[dict]       # Clip metadata (start, end, description)
+    clip_urls: Optional[List[Dict]] = None
     
     # Download
     download_url: str

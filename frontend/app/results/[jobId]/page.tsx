@@ -24,11 +24,20 @@ interface Clip {
   description: string;
 }
 
+interface ClipUrl { 
+  clip_number: number;
+  url: string;
+  start_time: number;
+  end_time: number;
+  description: string;
+}
+
 interface ProcessingResults {
   transcript: string;
   viral_hooks: string[];
   captions: Caption[];
   clips: Clip[];
+  clip_urls?: ClipUrl[];
 }
 
 export default function ResultsPage() {
@@ -142,7 +151,7 @@ export default function ResultsPage() {
     );
   }
 
-  const { results } = jobStatus;
+  const results = jobStatus.results;
   if (!results) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-dark-surface to-black flex items-center justify-center p-4">
@@ -168,7 +177,7 @@ export default function ResultsPage() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-tiktok-cyan" />
             <span className="text-xl font-bold bg-gradient-to-r from-tiktok-cyan via-tiktok-purple to-tiktok-pink bg-clip-text text-transparent">
-              TikTok Multiplier
+              Stack Slice AI
             </span>
           </div>
 
@@ -295,23 +304,51 @@ export default function ResultsPage() {
             </section>
           )}
 
-          {/* Clips */}
-          {results.clips && results.clips.length > 0 && (
+          {/* Clips with Video Preview */}
+          {results.clip_urls && results.clip_urls.length > 0 && (
             <section>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <span className="text-3xl">🎬</span>
-                Viral Moment Clips ({results.clips.length})
+                Viral Moment Clips ({results.clip_urls.length})
               </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {results.clips.map((clip: Clip, index: number) => (
-                  <div key={index} className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-sm text-white/40">Clip #{index + 1}</span>
-                      <span className="text-xs text-tiktok-cyan">
-                        {clip.start_time}s - {clip.end_time}s
-                      </span>
+              <div className="grid md:grid-cols-2 gap-6">
+                {results.clip_urls.map((clip: any, index: number) => (
+                  <div 
+                    key={index} 
+                    className="rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors overflow-hidden"
+                  >
+                    {/* Video Player */}
+                    <div className="relative aspect-video bg-black">
+                      <video 
+                        controls
+                        className="w-full h-full"
+                        preload="metadata"
+                      >
+                        <source src={clip.url} type="video/mp4" />
+                        Your browser does not support video playback.
+                      </video>
                     </div>
-                    <p className="text-white">{clip.description}</p>
+                    
+                    {/* Clip Info */}
+                    <div className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-sm text-white/40">Clip #{clip.clip_number}</span>
+                        <span className="text-xs text-tiktok-cyan">
+                          {clip.start_time}s - {clip.end_time}s
+                        </span>
+                      </div>
+                      <p className="text-white mb-4">{clip.description}</p>
+                      
+                      {/* Download Individual Clip */}
+                      <a
+                        href={clip.url}
+                        download={`clip-${clip.clip_number}.mp4`}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download Clip
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>

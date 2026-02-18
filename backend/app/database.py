@@ -173,6 +173,13 @@ async def update_job_status(job_id: str, status: str, message: str = None):
 async def update_job_results(job_id: str, results: dict):
     """Update job with final results"""
     try:
+        # Extract clip URLs if they exist
+        clip_urls = results.pop('clip_urls', [])
+        
+        # Add clip_urls as a separate field
+        if clip_urls:
+            results['clip_urls'] = clip_urls
+        
         result = db.get_client().table("jobs").update(results).eq("id", job_id).execute()
         
         logger.info(f"Job {job_id} results updated")
