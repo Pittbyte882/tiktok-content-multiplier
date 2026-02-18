@@ -25,7 +25,7 @@ class ClipperAgent:
         video_path: str,
         transcript: str,
         transcript_segments: List[Dict] = None,
-        target_clips: int = 20
+        target_clips: int = 5
     ) -> List[Dict]:
         """
         Identify viral moments and create clips
