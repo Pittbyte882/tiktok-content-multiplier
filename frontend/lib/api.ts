@@ -28,6 +28,13 @@ export interface JobStatusResponse {
       end_time: number;
       description: string;
     }>;
+    clip_urls?: Array<{  // ✅ ADD THIS
+      clip_number: number;
+      url: string;
+      start_time: number;
+      end_time: number;
+      description: string;
+    }>;
     download_url?: string;
   };
 }
