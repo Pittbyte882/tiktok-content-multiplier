@@ -53,6 +53,8 @@ class ClipperAgent:
                 target_clips
             )
             
+            logger.info(f"AI identified {len(viral_moments)} viral moments")
+            
             # Step 2: Extract clips from video
             clips = await self._extract_clips(video_path, viral_moments)
             
@@ -115,7 +117,10 @@ Continue for {target_count} moments. Prioritize VARIETY - different types of hoo
                 messages=[{"role": "user", "content": prompt}]
             )
             
-            moments = self._parse_viral_moments(response.content[0].text)
+            response_text = response.content[0].text
+            logger.info(f"Received AI response: {len(response_text)} characters")
+            
+            moments = self._parse_viral_moments(response_text)
             
             # If we have segments with precise timestamps, refine the times
             if segments:
@@ -130,40 +135,69 @@ Continue for {target_count} moments. Prioritize VARIETY - different types of hoo
     def _parse_viral_moments(self, response_text: str) -> List[Dict]:
         """Parse viral moments from AI response"""
         moments = []
-        sections = response_text.split('\n\n')
         
-        for section in sections:
-            if 'START:' in section and 'END:' in section:
+        # Log the raw response
+        logger.info(f"🔍 Raw AI response length: {len(response_text)} chars")
+        logger.info(f"🔍 First 500 chars: {response_text[:500]}")
+        
+        # Try to parse numbered sections (1., 2., 3., etc.)
+        lines = response_text.split('\n')
+        current_moment = {}
+        
+        for line in lines:
+            line = line.strip()
+            
+            if not line:
+                continue
+                
+            # Check for START timestamp
+            if 'START:' in line.upper():
                 try:
-                    # Parse timestamps
-                    start_line = [l for l in section.split('\n') if 'START:' in l][0]
-                    end_line = [l for l in section.split('\n') if 'END:' in l][0]
-                    
-                    start_time = self._parse_timestamp(start_line.split('START:')[1].strip())
-                    end_time = self._parse_timestamp(end_line.split('END:')[1].strip())
-                    
-                    # Parse description
-                    desc_line = [l for l in section.split('\n') if 'DESCRIPTION:' in l]
-                    description = desc_line[0].split('DESCRIPTION:')[1].strip() if desc_line else "Viral moment"
-                    
-                    # Parse score
-                    score_line = [l for l in section.split('\n') if 'SCORE:' in l]
-                    score = int(score_line[0].split('SCORE:')[1].strip()) if score_line else 75
-                    
-                    moments.append({
-                        "start_time": start_time,
-                        "end_time": end_time,
-                        "duration": end_time - start_time,
-                        "description": description,
-                        "score": score
-                    })
+                    time_str = line.split(':', 1)[1].strip()
+                    current_moment['start_time'] = self._parse_timestamp(time_str)
+                    logger.info(f"Found START: {current_moment['start_time']}")
                 except Exception as e:
-                    logger.error(f"Failed to parse moment: {e}")
-                    continue
+                    logger.error(f"Failed to parse START: {line} - {e}")
+                    
+            # Check for END timestamp
+            elif 'END:' in line.upper():
+                try:
+                    time_str = line.split(':', 1)[1].strip()
+                    current_moment['end_time'] = self._parse_timestamp(time_str)
+                    logger.info(f"Found END: {current_moment['end_time']}")
+                except Exception as e:
+                    logger.error(f"Failed to parse END: {line} - {e}")
+                    
+            # Check for DESCRIPTION
+            elif 'DESCRIPTION:' in line.upper():
+                try:
+                    desc = line.split(':', 1)[1].strip()
+                    current_moment['description'] = desc
+                    logger.info(f"Found DESCRIPTION: {desc[:50]}...")
+                except Exception as e:
+                    logger.error(f"Failed to parse DESCRIPTION: {line} - {e}")
+                    
+            # Check for SCORE
+            elif 'SCORE:' in line.upper():
+                try:
+                    score_str = line.split(':', 1)[1].strip()
+                    current_moment['score'] = int(score_str)
+                    logger.info(f"Found SCORE: {current_moment['score']}")
+                    
+                    # If we have all fields, save the moment
+                    if all(k in current_moment for k in ['start_time', 'end_time', 'description', 'score']):
+                        current_moment['duration'] = current_moment['end_time'] - current_moment['start_time']
+                        moments.append(current_moment.copy())
+                        logger.info(f"✅ Added moment: {current_moment['start_time']}s - {current_moment['end_time']}s")
+                        current_moment = {}
+                except Exception as e:
+                    logger.error(f"Failed to parse SCORE: {line} - {e}")
         
-        # Sort by score (highest first)
+        logger.info(f"📊 Total moments found: {len(moments)}")
+        
+        # Sort by score
         moments.sort(key=lambda x: x['score'], reverse=True)
-        return moments
+        return moments[:20]  # Max 20 clips
     
     def _parse_timestamp(self, timestamp_str: str) -> float:
         """Convert MM:SS or HH:MM:SS to seconds"""
@@ -191,9 +225,13 @@ Continue for {target_count} moments. Prioritize VARIETY - different types of hoo
         video_dir = Path(video_path).parent
         video_name = Path(video_path).stem
         
+        logger.info(f"📹 Extracting {len(moments)} clips from {video_path}")
+        
         for i, moment in enumerate(moments, 1):
             try:
                 output_path = video_dir / f"{video_name}_clip_{i:02d}.mp4"
+                
+                logger.info(f"Extracting clip {i}: {moment['start_time']}s - {moment['end_time']}s ({moment['duration']}s)")
                 
                 # Extract clip with ffmpeg
                 (
@@ -218,16 +256,21 @@ Continue for {target_count} moments. Prioritize VARIETY - different types of hoo
                     "score": moment['score']
                 })
                 
-                logger.info(f"Extracted clip {i}: {moment['duration']:.1f}s at {moment['start_time']:.1f}s")
+                logger.info(f"✅ Extracted clip {i}: {moment['duration']:.1f}s at {moment['start_time']:.1f}s")
                 
             except ffmpeg.Error as e:
-                logger.error(f"FFmpeg clip extraction failed: {e.stderr.decode()}")
+                logger.error(f"❌ FFmpeg clip extraction failed for clip {i}: {e.stderr.decode() if e.stderr else str(e)}")
+                continue
+            except Exception as e:
+                logger.error(f"❌ Failed to extract clip {i}: {e}")
                 continue
         
+        logger.info(f"📊 Successfully extracted {len(clips)} clips")
         return clips
     
     def _fallback_moments(self, transcript: str, count: int) -> List[Dict]:
         """Generate simple clips if AI fails"""
+        logger.warning("Using fallback moment generation")
         # Split video into equal segments
         words = transcript.split()
         words_per_clip = len(words) // count
