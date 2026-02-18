@@ -88,7 +88,7 @@ def get_video_duration(file_path: str) -> float:
 
 @router.post("/upload", response_model=VideoUploadResponse)
 async def upload_video(
-    background_tasks: BackgroundTasks,  # ✅ ADD THIS
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
@@ -187,9 +187,18 @@ async def upload_video(
     # ✅ START PROCESSING IMMEDIATELY (INLINE)
     from app.tasks import process_video_job
     import asyncio
+
+    async def safe_process():
+        try:
+            logger.info(f"🔥 Starting processing for job {job_record['id']}")
+            await process_video_job(job_record["id"], temp_file_path)
+        except Exception as e:
+            logger.error(f"🔥 TASK FAILED: {e}", exc_info=True)
     
     # Create task and don't wait (fire and forget)
-    asyncio.create_task(process_video_job(job_record["id"], temp_file_path))
+    asyncio.create_task(safe_process())
+    
+    logger.info(f"🔥 Task created for job {job_record['id']}")
     
     # Return immediately so user sees "processing" status
     return VideoUploadResponse(
