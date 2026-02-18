@@ -22,12 +22,6 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://www.stacksliceai.com",     # Your main domain
-        "https://stacksliceai.com",          # Without www
-        "https://stacksliceai.vercel.app",   # Vercel preview
-        "http://localhost:3000",             # Local dev
-    ],
     allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
