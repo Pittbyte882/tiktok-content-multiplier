@@ -304,56 +304,73 @@ export default function ResultsPage() {
             </section>
           )}
 
-          {/* Clips with Video Preview */}
-          {results.clip_urls && results.clip_urls.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span className="text-3xl">🎬</span>
-                Viral Moment Clips ({results.clip_urls.length})
-              </h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                {results.clip_urls.map((clip: any, index: number) => (
-                  <div 
-                    key={index} 
-                    className="rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors overflow-hidden"
-                  >
-                    {/* Video Player */}
-                    <div className="relative aspect-video bg-black">
-                      <video 
-                        controls
-                        className="w-full h-full"
-                        preload="metadata"
-                      >
-                        <source src={clip.url} type="video/mp4" />
-                        Your browser does not support video playback.
-                      </video>
-                    </div>
-                    
-                    {/* Clip Info */}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className="text-sm text-white/40">Clip #{clip.clip_number}</span>
-                        <span className="text-xs text-tiktok-cyan">
-                          {clip.start_time}s - {clip.end_time}s
-                        </span>
-                      </div>
-                      <p className="text-white mb-4">{clip.description}</p>
-                      
-                      {/* Download Individual Clip */}
-                      <a
-                        href={clip.url}
-                        download={`clip-${clip.clip_number}.mp4`}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download Clip
-                      </a>
-                    </div>
+          {/* Clips Section - Show timestamps even without videos */}
+          {results.clips && results.clips.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span className="text-3xl">🎬</span>
+            Viral Moment Clips ({results.clip_urls?.length || results.clips.length})
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {results.clip_urls && results.clip_urls.length > 0 ? (
+              /* WITH VIDEO PLAYERS */
+              results.clip_urls.map((clip: ClipUrl, index: number) => (
+                <div 
+                  key={index} 
+                  className="rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors overflow-hidden"
+                >
+                  <div className="relative aspect-video bg-black">
+                    <video 
+                      controls
+                      className="w-full h-full"
+                      preload="metadata"
+                    >
+                      <source src={clip.url} type="video/mp4" />
+                      Your browser does not support video playback.
+                    </video>
                   </div>
-                ))}
-              </div>
-            </section>
-          )}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-sm text-white/40">Clip #{clip.clip_number}</span>
+                      <span className="text-xs text-tiktok-cyan">
+                        {clip.start_time}s - {clip.end_time}s
+                      </span>
+                    </div>
+                    <p className="text-white mb-4">{clip.description}</p>
+                    <a
+                      href={clip.url}
+                      download={`clip-${clip.clip_number}.mp4`}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download Clip
+                    </a>
+                  </div>
+                </div>
+              ))
+            ) : (
+        /* WITHOUT VIDEO PLAYERS - JUST TIMESTAMPS */
+        results.clips.map((clip: Clip, index: number) => (
+          <div 
+            key={index} 
+            className="rounded-2xl bg-white/5 border border-white/10 hover:border-tiktok-pink/30 transition-colors p-6"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-sm text-white/40">Clip #{index + 1}</span>
+              <span className="text-xs text-tiktok-cyan">
+                {clip.start_time}s - {clip.end_time}s
+              </span>
+            </div>
+            <p className="text-white mb-4">{clip.description}</p>
+            <div className="text-sm text-white/60 bg-white/5 rounded-lg p-3">
+              💡 Video clips are being generated. They'll be ready in the next upload!
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </section>
+)}
         </div>
       </div>
     </div>
