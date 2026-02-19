@@ -60,19 +60,28 @@ async def process_video_job(job_id: str, video_path: str):
         # Step 4: Generate clips
         await update_job_status(job_id, "processing", "Extracting viral clips...")
         clipper = ClipperAgent()
-        clips = await clipper.generate_clips(video_path, transcript, segments, target_clips=20)
+        clips = await clipper.generate_clips(video_path, transcript, segments, target_clips=5)
         
         logger.info(f"Extracted {len(clips)} clips")
         
         # Step 5: Package results
         await update_job_status(job_id, "processing", "Packaging results...")
-        zip_path = await package_results(job_id, {
+        
+        # Create results dict that package_results will modify
+        results_package = {
             'transcript': transcript,
             'hooks': hooks,
             'captions': captions,
             'clips': clips,
             'video_path': video_path
-        })
+        }
+        
+        zip_path = await package_results(job_id, results_package)
+        
+        # Get clip_urls that were added by package_results
+        uploaded_clip_urls = results_package.get('clip_urls', [])
+        
+        logger.info(f"📹 Got {len(uploaded_clip_urls)} clip URLs from package_results")
         
         # Step 6: Update job with results
         await update_job_results(job_id, {
@@ -89,6 +98,7 @@ async def process_video_job(job_id: str, video_path: str):
                 }
                 for clip in clips
             ],
+            "clip_urls": uploaded_clip_urls,  # ✅ NOW INCLUDED
             "output_zip_url": zip_path,
             "completed_at": datetime.utcnow().isoformat()
         })
@@ -133,7 +143,7 @@ async def package_results(job_id: str, results: dict) -> str:
         caption_text = f"{caption_data['caption']}\n\n{' '.join(caption_data['hashtags'])}"
         caption_file.write_text(caption_text)
     
-    # ✅ UPLOAD CLIPS TO SUPABASE STORAGE
+    # Upload clips to Supabase Storage
     clips_dir = output_dir / "clips"
     clips_dir.mkdir(exist_ok=True)
     
@@ -146,7 +156,7 @@ async def package_results(job_id: str, results: dict) -> str:
             clip_dest = clips_dir / clip_source.name
             shutil.copy2(clip_source, clip_dest)
             
-            # ✅ UPLOAD TO SUPABASE STORAGE
+            # Upload to Supabase Storage
             try:
                 with open(clip_source, 'rb') as f:
                     clip_data = f.read()
@@ -154,14 +164,32 @@ async def package_results(job_id: str, results: dict) -> str:
                 # Upload to Supabase Storage
                 storage_path = f"clips/{job_id}/{clip_source.name}"
                 
-                result = db.get_client().storage.from_('videos').upload(
-                    storage_path,
-                    clip_data,
-                    file_options={"content-type": "video/mp4"}
-                )
+                logger.info(f"Attempting to upload clip {i} to Supabase: {storage_path}")
+                
+                try:
+                    # Try to upload
+                    result = db.get_client().storage.from_('videos').upload(
+                        storage_path,
+                        clip_data,
+                        file_options={"content-type": "video/mp4"}
+                    )
+                    logger.info(f"Upload result: {result}")
+                except Exception as upload_error:
+                    logger.error(f"Upload failed: {upload_error}")
+                    # If file already exists, delete and retry
+                    if "already exists" in str(upload_error).lower():
+                        logger.info(f"File exists, removing and retrying...")
+                        db.get_client().storage.from_('videos').remove([storage_path])
+                        result = db.get_client().storage.from_('videos').upload(
+                            storage_path,
+                            clip_data,
+                            file_options={"content-type": "video/mp4"}
+                        )
                 
                 # Get public URL
                 public_url = db.get_client().storage.from_('videos').get_public_url(storage_path)
+                
+                logger.info(f"Uploaded clip {i} to Supabase: {public_url}")
                 
                 uploaded_clip_urls.append({
                     "clip_number": i,
@@ -170,8 +198,6 @@ async def package_results(job_id: str, results: dict) -> str:
                     "end_time": clip['end_time'],
                     "description": clip['description']
                 })
-                
-                logger.info(f"Uploaded clip {i} to Supabase: {public_url}")
                 
             except Exception as e:
                 logger.error(f"Failed to upload clip {i} to Supabase: {e}")
@@ -208,7 +234,7 @@ Need help? Contact support@stacksliceai.com
     
     logger.info(f"Results packaged: {zip_path}")
     
-    # Store clip URLs in database for frontend access
+    # ✅ STORE CLIP URLS IN RESULTS DICT SO THEY CAN BE ACCESSED
     results['clip_urls'] = uploaded_clip_urls
     
     return str(zip_path)
